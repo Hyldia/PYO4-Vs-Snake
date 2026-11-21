@@ -155,3 +155,28 @@ vite.config.ts.timestamp-*
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
+
+# Variables de entorno
+.env
+.env.*
+
+# Archivos de VS Code
+.vscode/
+
+# Archivos de JetBrains (IntelliJ/WebStorm)
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos temporales
+temp/
+tmp/
+
+# Base de datos local (por si eventualmente usan alguna)
+*.db
+*.sqlite
+
+# Archivos de despliegue
+.vercel
