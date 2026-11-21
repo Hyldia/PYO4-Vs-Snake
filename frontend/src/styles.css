@@ -61,6 +61,17 @@ body{
     background:#16A34A;
 }
 
+.tarjeta button:disabled{
+    cursor:wait;
+    opacity:.7;
+}
+
+.error-autenticacion{
+    margin:12px 0 0 !important;
+    color:#FCA5A5 !important;
+    font-size:14px;
+}
+
 .inicio{
     width:min(720px, calc(100% - 32px));
 }
