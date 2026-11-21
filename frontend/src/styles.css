@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    background:#0F172A;
+}
+
+.contenedor{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.tarjeta{
+    width:420px;
+    background:#1E293B;
+    padding:40px;
+    border-radius:20px;
+    text-align:center;
+    box-shadow:0 0 20px rgba(34,197,94,.3);
+}
+
+.tarjeta h1{
+    color:#22C55E;
+    margin-bottom:10px;
+}
+
+.tarjeta p{
+    color:#CBD5E1;
+    margin-bottom:25px;
+}
+
+.tarjeta input:not([type="radio"]){
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+.tarjeta button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background:#22C55E;
+    color:white;
+    font-size:16px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+.tarjeta button:hover{
+    background:#16A34A;
+}
+
+.inicio{
+    width:min(720px, calc(100% - 32px));
+}
+
+.opciones-juego{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:16px;
+    text-align:left;
+}
+
+.opcion-juego{
+    padding:20px;
+    border:1px solid rgba(203,213,225,.2);
+    border-radius:14px;
+    background:#0F172A;
+}
+
+.opcion-juego h2{
+    color:#22C55E;
+    font-size:18px;
+    margin-bottom:8px;
+}
+
+.opcion-juego p{
+    margin:0;
+}
+
+.opcion-juego button{
+    margin-top:20px;
+}
+
+.tarjeta-crear{
+    width:min(560px, calc(100% - 32px));
+    text-align:left;
+}
+
+.tarjeta-crear h1,
+.tarjeta-crear > p{
+    text-align:center;
+}
+
+.boton-volver{
+    width:auto !important;
+    padding:8px 14px !important;
+    margin-bottom:16px;
+    background:#334155 !important;
+}
+
+.boton-volver:hover{
+    background:#475569 !important;
+}
+
+.formulario-partida{
+    display:grid;
+    gap:20px;
+}
+
+.campo-partida{
+    display:grid;
+    gap:8px;
+    color:#CBD5E1;
+    font-weight:500;
+}
+
+.tarjeta-crear .campo-partida input:not([type="radio"]){
+    margin:0;
+}
+
+.grupo-opciones{
+    min-width:0;
+    border:0;
+}
+
+.grupo-opciones legend{
+    margin-bottom:10px;
+    color:#CBD5E1;
+    font-weight:500;
+}
+
+.opciones-radio{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.opcion-radio{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 14px;
+    border:1px solid rgba(203,213,225,.2);
+    border-radius:10px;
+    color:#CBD5E1;
+    cursor:pointer;
+}
+
+.opcion-radio input{
+    accent-color:#22C55E;
+}
+
+.opcion-radio span{
+    color:inherit;
+}
+
+.tarjeta-sala{
+    width:min(620px, calc(100% - 32px));
+    text-align:left;
+}
+
+.tarjeta-sala > h1,
+.nombre-partida{
+    text-align:center;
+}
+
+.nombre-partida{
+    margin:20px 0;
+    color:#CBD5E1;
+    font-size:22px;
+    overflow-wrap:anywhere;
+}
+
+.codigo-partida{
+    display:grid;
+    justify-items:center;
+    gap:6px;
+    padding:18px;
+    border:1px solid rgba(34,197,94,.45);
+    border-radius:14px;
+    background:#0F172A;
+    color:#CBD5E1;
+}
+
+.codigo-partida strong{
+    color:#22C55E;
+    font-size:32px;
+    letter-spacing:6px;
+}
+
+.lista-jugadores{
+    margin-top:24px;
+}
+
+.lista-jugadores h2{
+    margin-bottom:12px;
+    color:#CBD5E1;
+    font-size:18px;
+}
+
+.lista-jugadores ul{
+    display:grid;
+    gap:8px;
+    padding:0;
+    list-style:none;
+}
+
+.lista-jugadores li{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    min-height:46px;
+    padding:10px 14px;
+    border-radius:10px;
+    background:#0F172A;
+    color:#CBD5E1;
+}
+
+.lista-jugadores .espacio-libre{
+    color:#94A3B8;
+}
+
+.etiqueta-anfitrion{
+    color:#22C55E;
+    font-size:13px;
+}
+
+.contador-sala{
+    display:grid;
+    justify-items:center;
+    gap:8px;
+    margin:24px 0;
+    padding:20px;
+    border-radius:14px;
+    background:#0F172A;
+    color:#CBD5E1;
+    text-align:center;
+}
+
+.contador-sala p{
+    margin:0;
+}
+
+.contador-sala strong{
+    color:#22C55E;
+    font-size:40px;
+    line-height:1.2;
+}
+
+.contador-sala span{
+    color:#94A3B8;
+    font-size:13px;
+}
