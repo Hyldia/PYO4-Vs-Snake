@@ -29,10 +29,10 @@ function App() {
   if (pantalla === 'crear') {
     return (
       <CrearPartida
+        jugador={jugador}
         onVolver={() => setPantalla('inicio')}
-        onCrearPartida={(configuracion) => {
-          const codigo = String(Math.floor(100000 + Math.random() * 900000))
-          setPartida({ ...configuracion, codigo })
+        onPartidaCreada={(nuevaPartida) => {
+          setPartida(nuevaPartida)
           setPantalla('sala')
         }}
       />

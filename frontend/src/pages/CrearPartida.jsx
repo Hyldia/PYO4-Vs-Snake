@@ -1,19 +1,35 @@
-function CrearPartida({ onVolver, onCrearPartida }) {
-    function handleSubmit(event) {
+import { useState } from 'react'
+import { crearPartida } from '../services/partidas'
+
+function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
+    const [error, setError] = useState('')
+    const [cargando, setCargando] = useState(false)
+
+    async function handleSubmit(event) {
         event.preventDefault()
         const datos = new FormData(event.currentTarget)
-        const nombre = String(datos.get('nombre')).trim()
+        const nombrePartida = String(datos.get('nombre')).trim()
 
-        if (!nombre) {
+        if (!nombrePartida) {
             return
         }
 
-        onCrearPartida({
-            nombre,
-            jugadores: Number(datos.get('jugadores')),
-            modo: datos.get('modo'),
-            tematica: datos.get('tematica'),
-        })
+        setError('')
+        setCargando(true)
+        try {
+            const partida = await crearPartida({
+                anfitrion: jugador,
+                nombrePartida,
+                cantidadJugadores: Number(datos.get('jugadores')),
+                tipoJuego: datos.get('modo'),
+                tematica: datos.get('tematica'),
+            })
+            onPartidaCreada(partida)
+        } catch (error) {
+            setError(error.message || 'No se pudo conectar con el servidor.')
+        } finally {
+            setCargando(false)
+        }
     }
 
     return (
@@ -82,7 +98,10 @@ function CrearPartida({ onVolver, onCrearPartida }) {
                         </div>
                     </fieldset>
 
-                    <button type="submit">Crear partida</button>
+                    <button type="submit" disabled={cargando}>
+                        {cargando ? 'Creando...' : 'Crear partida'}
+                    </button>
+                    {error && <p className="error-autenticacion" role="alert">{error}</p>}
                 </form>
             </section>
         </main>

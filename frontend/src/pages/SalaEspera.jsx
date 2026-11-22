@@ -1,11 +1,12 @@
 function SalaEspera({ jugador, partida, onVolver }) {
-    const espaciosLibres = Math.max(partida.jugadores - 1, 0)
+    const jugadores = partida.jugadores || [jugador]
+    const espaciosLibres = Math.max(partida.cantidadJugadores - jugadores.length, 0)
 
     return (
         <main className="contenedor">
             <section className="tarjeta tarjeta-sala">
                 <h1>Sala de espera</h1>
-                <h2 className="nombre-partida">{partida.nombre}</h2>
+                <h2 className="nombre-partida">{partida.nombrePartida}</h2>
 
                 <div className="codigo-partida">
                     <span>Código de la partida</span>
@@ -14,13 +15,17 @@ function SalaEspera({ jugador, partida, onVolver }) {
 
                 <section className="lista-jugadores" aria-labelledby="titulo-jugadores">
                     <h2 id="titulo-jugadores">
-                        Jugadores ({partida.jugadores - espaciosLibres}/{partida.jugadores})
+                        Jugadores ({jugadores.length}/{partida.cantidadJugadores})
                     </h2>
                     <ul>
-                        <li>
-                            <span>{jugador}</span>
-                            <span className="etiqueta-anfitrion">Anfitrión</span>
-                        </li>
+                        {jugadores.map((nombre, index) => (
+                            <li key={`${nombre}-${index}`}>
+                                <span>{nombre}</span>
+                                {nombre.toLowerCase() === partida.anfitrion.toLowerCase() && (
+                                    <span className="etiqueta-anfitrion">Anfitrión</span>
+                                )}
+                            </li>
+                        ))}
                         {Array.from({ length: espaciosLibres }, (_, index) => (
                             <li className="espacio-libre" key={index}>
                                 Esperando jugador...

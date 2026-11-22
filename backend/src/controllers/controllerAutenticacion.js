@@ -2,7 +2,7 @@
 const {
     autenticarNickname: autenticar,
     desconectarNickname,
-} = require('../services/servicioAutenticacion')
+} = require('../services/servicesAutenticacion')
 
 /*
 * Objetivo: Validar que el nickname ingresado sea válido y que no este usando por otro jugador conectado.
