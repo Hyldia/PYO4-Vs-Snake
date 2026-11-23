@@ -3,7 +3,7 @@ const assert = require('node:assert/strict')
 const {
     autenticarNickname,
     desconectarNickname,
-} = require('../src/services/servicioAutenticacion')
+} = require('../src/services/servicesAutenticacion')
 
 test('reserva nickname, rechaza duplicados ignorando mayúsculas y lo libera', () => {
     const nickname = `Jugador-${Date.now()}`

@@ -1,6 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
-const { autenticarNickname, desconectarNickname } = require('../src/services/servicioAutenticacion')
+const { autenticarNickname, desconectarNickname } = require('../src/services/servicesAutenticacion')
 const {
     crearPartida,
     eliminarPartida,
