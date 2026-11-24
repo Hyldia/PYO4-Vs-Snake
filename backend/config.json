@@ -1,0 +1,19 @@
+{
+    "expiracionPartidaSegundos": 180,
+    "cuentaRegresivaSegundos": 3,
+    "duracionPorDefectoSegundos": 180,
+    "longitudObjetivoPorDefecto": 20,
+    "minimoJugadores": 2,
+    "maximoJugadores": 4,
+    // movimientosPorSegundo: cantidad de movimientos que puede hacer la serpiente por segundo.
+    "movimientosPorSegundo": 3,
+    "celdasPerdidasPorChoque": 2,
+    "segundosInmovilPorVeneno": 3,
+    "segundosAparicionVeneno": 10,
+    "segundosCambioVeneno": 8,
+    "maximoVenenos": 3,
+    "colores": ["#e53935", "#1e88e5", "#43a047", "#fdd835", "#8e24aa", "#fb8c00"]
+}
+
+// configuración de la partida, tiempos y colores de los jugadores.
+// cantidad de movimientos que puede hacer la serpiente por segundo.
