@@ -107,7 +107,7 @@ function actualizarPartida(codigo, cambios) {
  * Restricciones: Solo elimina el registro indicado
  */
 function eliminarPartida(codigo) {
-    return partidas.delete(String(codigo).trim())
+    const clave = String(codigo).trim()
     const elimnada = partidas.delete(clave)
     if (elimnada) {
         notificarCambio('eliminada', clave)

@@ -1,5 +1,5 @@
 {
-    "expiracionPartidaSegundos": 180,
+    "expiracionPartidaSegundos": 10,
     "cuentaRegresivaSegundos": 3,
     "duracionPorDefectoSegundos": 180,
     "longitudObjetivoPorDefecto": 20,
