@@ -19,6 +19,7 @@ test('crea partida con código único, permite modificarla y eliminarla', () => 
             nombrePartida: 'Partida de prueba',
             cantidadJugadores: 2,
             tipoJuego: 'tiempo',
+            valorModo: 3,
             tematica: 'clasica',
         }
         const partida = crearPartida(configuracion)
@@ -30,7 +31,9 @@ test('crea partida con código único, permite modificarla y eliminarla', () => 
         assert.notEqual(partida.codigo, otraPartida.codigo)
         assert.deepEqual(partida.jugadores, [anfitrion])
         assert.equal(partida.estado, 'esperando')
+        assert.equal(partida.duracionSegundos, 180)
         assert.equal(obtenerPartida(partida.codigo).codigo, partida.codigo)
+        
 
         const actualizada = modificarConfiguracion(partida.codigo, anfitrion, {
             tematica: 'fruit-mix',

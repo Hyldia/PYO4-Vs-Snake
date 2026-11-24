@@ -15,8 +15,3 @@ export async function autenticarNickname(nickname) {
 
     return resultado.nickname
 }
-
-export function desconectarNickname(nickname) {
-    const body = new URLSearchParams({ nickname })
-    return navigator.sendBeacon(`${AUTH_URL}/salir`, body)
-}

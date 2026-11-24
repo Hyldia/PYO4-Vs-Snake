@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
-import { iniciarPartida, obtenerPartida } from '../services/partidas'
+import { iniciarPartida } from '../services/partidas'
+import { entrarSala, salirSala, socket } from '../services/socket'
 
+/*
+* Objetivo: Mostrar la sala de espera de una partida con sus cambios en tiempo real
+ * Entrada: Nickname del jugador, partida inicial y función para volver al inicio
+ * Salida: Pantalla con los jugadores, el estado de la partida y el botón de iniciar
+ * Restricciones: Solo el anfitrión puede iniciar; si la partida se elimina se muestra un aviso
+*/
 function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
     const [partida, setPartida] = useState(partidaInicial)
+    const [cancelada, setCancelada] = useState(false)
     const [error, setError] = useState('')
     const [iniciando, setIniciando] = useState(false)
     const esAnfitrion = jugador.toLowerCase() === partida.anfitrion.toLowerCase()
@@ -10,27 +18,56 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
     const espaciosLibres = Math.max(partida.cantidadJugadores - jugadores.length, 0)
 
     useEffect(() => {
-        if (partida.estado === 'finalizada') {
-            return undefined
+        const codigo = partidaInicial.codigo
+        /*
+         * Objetivo: Guardar la versión más reciente de la partida
+         * Entrada: Partida enviada por el servidor
+         * Salida: No retorna valor; actualiza el estado
+         * Restricciones: Solo acepta cambios de la partida de esta sala
+         */
+        function manejarActualizacion(partidaActualizada) {
+            if (partidaActualizada.codigo === codigo) {
+                setPartida(partidaActualizada)
+            }
         }
 
-        const intervalo = setInterval(async () => {
-            try {
-                setPartida(await obtenerPartida(partida.codigo))
-            } catch {
-                // La partida puede vencer mientras se consulta.
+        /*
+         * Objetivo: Mostrar el aviso cuando la partida deja de existir
+         * Entrada: Código de la partida eliminada
+         * Salida: No retorna valor; marca la partida como cancelada
+         * Restricciones: Solo reacciona si el código es el de esta sala
+         */
+        function manejarEliminacion(codigoEliminado) {
+            if (codigoEliminado === codigo) {
+                setCancelada(true)
             }
-        }, 1000)
+        }
 
-        return () => clearInterval(intervalo)
-    }, [partida.codigo, partida.estado])
+        socket.on('partidaActualizada', manejarActualizacion)
+        socket.on('partidaEliminada', manejarEliminacion)
+        entrarSala(codigo)
+            .then(setPartida)
+            .catch(() => setCancelada(true))
 
+        // Al salir de la pantalla se dejan de escuchar los cambios
+        return () => {
+            socket.off('partidaActualizada', manejarActualizacion)
+            socket.off('partidaEliminada', manejarEliminacion)
+            salirSala(codigo)
+        }
+    }, [partidaInicial.codigo])
+
+    /*
+     * Objetivo: Pedir al servidor que inicie la partida
+     * Entrada: No recibe parámetros
+     * Salida: No retorna valor; los cambios llegan por Socket.IO
+     * Restricciones: Solo el anfitrión ve el botón y la partida debe estar llena
+     */
     async function handleIniciar() {
         setError('')
         setIniciando(true)
         try {
-            const partidaActualizada = await iniciarPartida(partida.codigo, jugador)
-            setPartida(partidaActualizada)
+            await iniciarPartida(partida.codigo, jugador)
         } catch (error) {
             setError(error.message || 'No se pudo iniciar la partida.')
         } finally {
@@ -38,6 +75,20 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
         }
     }
 
+    if (cancelada) {
+
+        return (
+            <main className="contenedor">
+                <section className="tarjeta tarjeta-sala">
+                    <h1>Partida cancelada</h1>
+                    <p>La partida ya no existe o fue eliminada por el anfitrión.</p>
+                    <button className="boton-volver" type="button" onClick={onVolver}>
+                        Volver al inicio
+                    </button>
+                </section>
+            </main>
+        )
+    }
     return (
         <main className="contenedor">
             <section className="tarjeta tarjeta-sala">
@@ -89,7 +140,7 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
                             <strong>
                                 {partida.tipoJuego === 'tiempo'
                                     ? `${partida.tiempoRestante ?? '--'} s`
-                                    : 'Meta de longitud'}
+                                    : `Meta: largo ${partida.longitudObjetivo}`}
                             </strong>
                         </>
                     )}

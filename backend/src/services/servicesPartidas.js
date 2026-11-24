@@ -1,4 +1,5 @@
 const { randomInt } = require('node:crypto')
+const config = require('../utils/configuracion')
 const { existeJugador } = require('../utils/jugadoresConectados')
 const {
     actualizarPartida: actualizarEnMemoria,
@@ -8,7 +9,7 @@ const {
     obtenerPartidas,
 } = require('../utils/partidasActivas')
 
-const TIEMPO_EXPIRACION_MS = 3 * 60 * 1000
+const TIEMPO_EXPIRACION_MS = config.expiracionPartidaSegundos * 1000
 const CODIGOS_POR_GENERAR = 100
 const codigosTemporizados = new Map()
 const MODOS_VALIDOS = new Set(['tiempo', 'longitud'])
@@ -51,8 +52,9 @@ function validarNombre(nombre) {
  */
 function validarConfiguracion({ cantidadJugadores, tipoJuego, tematica }) {
     const cantidad = Number(cantidadJugadores)
-    if (![2, 3, 4].includes(cantidad)) {
-        throw new ErrorPartida('La cantidad de jugadores debe ser 2, 3 o 4.')
+    const { minimoJugadores, maximoJugadores } = config
+    if (!Number.isInteger(cantidad) || cantidad < minimoJugadores || cantidad > maximoJugadores) {
+        throw new ErrorPartida(`La cantidad de jugadores debe estar entre ${minimoJugadores} y ${maximoJugadores}.`)
     }
     if (!MODOS_VALIDOS.has(tipoJuego)) {
         throw new ErrorPartida('El tipo de juego no es válido.')
@@ -62,7 +64,31 @@ function validarConfiguracion({ cantidadJugadores, tipoJuego, tematica }) {
     }
     return { cantidadJugadores: cantidad, tipoJuego, tematica }
 }
+/*
+ * Objetivo: Validar el valor que acompaña al modo de juego
+ * Entrada:
+        - Tipo de juego ('tiempo' o 'longitud')
+        - Valor indicado por el anfitrión: minutos para 'tiempo' o largo a alcanzar para 'longitud'
+ * Salida: Objeto con duracionSegundos y longitudObjetivo (el que no aplica queda en null)
+ * Restricciones:
+        - Los minutos deben ser un entero mayor o igual a 1
+        - El largo objetivo debe ser un entero mayor o igual a 2, porque las serpientes inician con largo 1
+ */
+function validarValorModo(tipoJuego, valorModo) {
+    const valor = Number(valorModo)
 
+    if (tipoJuego === 'tiempo') {
+        if (!Number.isInteger(valor) || valor < 1) {
+            throw new ErrorPartida('Los minutos deben ser un número entero mayor o igual a 1.')
+        }
+        return { duracionSegundos: valor * 60, longitudObjetivo: null }
+    }
+
+    if (!Number.isInteger(valor) || valor < 2) {
+        throw new ErrorPartida('El largo objetivo debe ser un número entero mayor o igual a 2.')
+    }
+    return { duracionSegundos: null, longitudObjetivo: valor }
+}
 /*
  * Objetivo: Valida que el anfitrión tenga una sesión activa
  * Entrada: Nickname del anfitrión
@@ -112,6 +138,19 @@ function programarExpiracion(codigo) {
     }
     codigosTemporizados.set(codigo, temporizador)
 }
+/*
+ * Objetivo: Cancelar la expiración automática de una partida
+ * Entrada: Código de la partida
+ * Salida: No retorna ningún valor
+ * Restricciones: Se usa cuando la partida arranca o cuando el anfitrión la elimina
+ */
+function cancelarExpiracion(codigo) {
+    const temporizador = codigosTemporizados.get(codigo)
+    if (temporizador) {
+        clearTimeout(temporizador)
+        codigosTemporizados.delete(codigo)
+    }
+}
 
 /*
  * Objetivo: Crea y guarda una partida con la configuración del anfitrión
@@ -123,6 +162,7 @@ function crearPartida(configuracion) {
     const anfitrion = validarAnfitrion(configuracion.anfitrion)
     const nombrePartida = validarNombre(configuracion.nombrePartida)
     const { cantidadJugadores, tipoJuego, tematica } = validarConfiguracion(configuracion)
+    const { duracionSegundos, longitudObjetivo } = validarValorModo(tipoJuego, configuracion.valorModo)
     const codigo = generarCodigo()
 
     const partida = {
@@ -132,6 +172,8 @@ function crearPartida(configuracion) {
         jugadores: [anfitrion], // El creador de la partida es el primer jugador
         cantidadJugadores,
         tipoJuego,
+        duracionSegundos,
+        longitudObjetivo,
         tematica,
         estado: 'esperando',
     }
@@ -183,6 +225,7 @@ function verificarAnfitrion(partida, anfitrion) {
  * Salida: Partida con la configuración actualizada
  * Restricciones: Solo el anfitrión puede cambiarla mientras está en espera; el cupo no puede quedar por debajo de los jugadores actuales
  */
+//esta función permite que el anfitrión cambie la configuración de la partida.
 function modificarConfiguracion(codigo, anfitrion, datos) {
     const partida = buscarEnMemoria(codigo)
     if (!partida) {
@@ -216,13 +259,18 @@ function modificarConfiguracion(codigo, anfitrion, datos) {
         Object.assign(cambios, validada)
     }
 
+    // Si cambia el modo, también debe venir su valor (minutos o largo)
+    if (Object.hasOwn(datos, 'tipoJuego') || Object.hasOwn(datos, 'valorModo')) {
+        const tipoJuego = Object.hasOwn(datos, 'tipoJuego') ? datos.tipoJuego : partida.tipoJuego
+        Object.assign(cambios, validarValorModo(tipoJuego, datos.valorModo))
+    }
+
     if (Object.keys(cambios).length === 0) {
         throw new ErrorPartida('Debes enviar al menos una opción para modificar.')
     }
 
     return actualizarEnMemoria(codigo, cambios)
 }
-
 /*
  * Objetivo: Eliminar una partida y cancelar su temporizador pendiente
  * Entrada: Código de la partida y nickname del anfitrión
@@ -235,12 +283,7 @@ function eliminarPartida(codigo, anfitrion) {
         throw new ErrorPartida('No se encontró la partida.', 404) // No se encontró el recurso solicitado.
     }
     verificarAnfitrion(partida, anfitrion)
-
-    const temporizador = codigosTemporizados.get(partida.codigo)
-    if (temporizador) {
-        clearTimeout(temporizador)
-        codigosTemporizados.delete(partida.codigo)
-    }
+    cancelarExpiracion(partida.codigo)
 
     eliminarDeMemoria(partida.codigo)
     return true
@@ -248,6 +291,7 @@ function eliminarPartida(codigo, anfitrion) {
 
 module.exports = {
     ErrorPartida,
+    cancelarExpiracion,
     crearPartida,
     eliminarPartida,
     listarPartidas,

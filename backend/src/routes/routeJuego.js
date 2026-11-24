@@ -1,8 +1,6 @@
 const express = require('express')
 const {
-    cuentaRegresiva,
     iniciarPartidaJuego,
-    temporizador,
     victoria,
 } = require('../controllers/controllerJuego')
 
@@ -15,8 +13,8 @@ const router = express.Router()
  * Restricciones: Las reglas de inicio y victoria se resuelven en el servicio.
  */
 router.post('/:codigo/iniciar', iniciarPartidaJuego)
-router.post('/:codigo/cuenta', cuentaRegresiva)
-router.post('/:codigo/temporizador', temporizador)
+//router.post('/:codigo/cuenta', cuentaRegresiva)
+//router.post('/:codigo/temporizador', temporizador)
 router.post('/:codigo/victoria', victoria)
 
 module.exports = router
