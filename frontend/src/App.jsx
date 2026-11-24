@@ -3,7 +3,8 @@ import Autenticacion from './pages/Autenticacion'
 import CrearPartida from './pages/CrearPartida'
 import Inicio from './pages/Inicio'
 import SalaEspera from './pages/SalaEspera'
-import { desconectarNickname } from './services/autenticacion'
+import { conectarSocket} from './services/socket'
+//import { desconectarNickname } from './services/autenticacion'
 import './styles.css'
 
 function App() {
@@ -12,19 +13,13 @@ function App() {
   const [partida, setPartida] = useState(null)
 
   useEffect(() => {
-    if (!jugador) {
-      return undefined
+    if (jugador) {
+      conectarSocket(jugador)
     }
-
-    const manejarSalida = () => desconectarNickname(jugador)
-    window.addEventListener('pagehide', manejarSalida)
-
-    return () => window.removeEventListener('pagehide', manejarSalida)
   }, [jugador])
-
-  if (!jugador) {
-    return <Autenticacion onIngresar={setJugador} />
-  }
+    if (!jugador) {
+      return <Autenticacion onIngresar={setJugador} />
+    }
 
   if (pantalla === 'crear') {
     return (

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { iniciarPartida, obtenerPartida } from '../services/partidas'
+import { iniciarPartida } from '../services/partidas'
+import { entrarSala, salirSala, socket  } from '../services/socket'
 
 function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
     const [partida, setPartida] = useState(partidaInicial)
+    const [cancelada, setCancelada] = useState(false)
     const [error, setError] = useState('')
     const [iniciando, setIniciando] = useState(false)
     const esAnfitrion = jugador.toLowerCase() === partida.anfitrion.toLowerCase()
@@ -10,27 +12,58 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
     const espaciosLibres = Math.max(partida.cantidadJugadores - jugadores.length, 0)
 
     useEffect(() => {
-        if (partida.estado === 'finalizada') {
-            return undefined
+    
+        const codigo = partidaInicial.codigo
+
+        /*
+         * Objetivo: Guardar la versión más reciente de la partida
+         * Entrada: Partida enviada por el servidor
+         * Salida: No retorna valor; actualiza el estado
+         * Restricciones: Solo acepta cambios de la partida de esta sala
+         */
+        function manejarActualizacion(partidaActualizada) {
+            if (partidaActualizada.codigo === codigo) {
+                setPartida(partidaActualizada)
+            }
         }
 
-        const intervalo = setInterval(async () => {
-            try {
-                setPartida(await obtenerPartida(partida.codigo))
-            } catch {
-                // La partida puede vencer mientras se consulta.
+        /*
+         * Objetivo: Mostrar el aviso cuando la partida deja de existir
+         * Entrada: Código de la partida eliminada
+         * Salida: No retorna valor; marca la partida como cancelada
+         * Restricciones: Solo reacciona si el código es el de esta sala
+         */
+        function manejarEliminacion(codigoEliminado) {
+            if (codigoEliminado === codigo) {
+                setCancelada(true)
             }
-        }, 1000)
+        }
 
-        return () => clearInterval(intervalo)
-    }, [partida.codigo, partida.estado])
+        socket.on('partidaActualizada', manejarActualizacion)
+        socket.on('partidaEliminada', manejarEliminacion)
+        entrarSala(codigo)
+            .then(setPartida)
+            .catch(() => setCancelada(true))
 
+        // Al salir de la pantalla se dejan de escuchar los cambios
+        return () => {
+            socket.off('partidaActualizada', manejarActualizacion)
+            socket.off('partidaEliminada', manejarEliminacion)
+            salirSala(codigo)
+        }
+    }, [partidaInicial.codigo])
+
+    /*
+     * Objetivo: Pedir al servidor que inicie la partida
+     * Entrada: No recibe parámetros
+     * Salida: No retorna valor; los cambios llegan por Socket.IO
+     * Restricciones: Solo el anfitrión ve el botón y la partida debe estar llena
+     */
     async function handleIniciar() {
         setError('')
         setIniciando(true)
         try {
-            const partidaActualizada = await iniciarPartida(partida.codigo, jugador)
-            setPartida(partidaActualizada)
+            await iniciarPartida(partida.codigo, jugador)
         } catch (error) {
             setError(error.message || 'No se pudo iniciar la partida.')
         } finally {
@@ -38,82 +71,95 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
         }
     }
 
-    return (
-        <main className="contenedor">
-            <section className="tarjeta tarjeta-sala">
-                <h1>Sala de espera</h1>
-                <h2 className="nombre-partida">{partida.nombrePartida}</h2>
-
-                <div className="codigo-partida">
-                    <span>Código de la partida</span>
-                    <strong>{partida.codigo}</strong>
-                </div>
-
-                <section className="lista-jugadores" aria-labelledby="titulo-jugadores">
-                    <h2 id="titulo-jugadores">
-                        Jugadores ({jugadores.length}/{partida.cantidadJugadores})
-                    </h2>
-                    <ul>
-                        {jugadores.map((nombre, index) => (
-                            <li key={`${nombre}-${index}`}>
-                                <span>{nombre}</span>
-                                {nombre.toLowerCase() === partida.anfitrion.toLowerCase() && (
-                                    <span className="etiqueta-anfitrion">Anfitrión</span>
-                                )}
-                            </li>
-                        ))}
-                        {Array.from({ length: espaciosLibres }, (_, index) => (
-                            <li className="espacio-libre" key={index}>
-                                Esperando jugador...
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-
-                <section className="contador-sala" aria-label="Contador de inicio">
-                    {partida.estado === 'cuenta_regresiva' && (
-                        <>
-                            <p>La partida comenzará en</p>
-                            <strong>{partida.cuentaRegresiva}</strong>
-                        </>
-                    )}
-                    {partida.estado === 'esperando' && (
-                        <>
-                            <p>La partida está esperando jugadores</p>
-                            <strong>--:--</strong>
-                        </>
-                    )}
-                    {partida.estado === 'jugando' && (
-                        <>
-                            <p>Juego en curso</p>
-                            <strong>
-                                {partida.tipoJuego === 'tiempo'
-                                    ? `${partida.tiempoRestante ?? '--'} s`
-                                    : 'Meta de longitud'}
-                            </strong>
-                        </>
-                    )}
-                    {partida.estado === 'finalizada' && (
-                        <>
-                            <p>Partida finalizada</p>
-                            <strong>{partida.ganador || 'Empate'}</strong>
-                        </>
-                    )}
-                    {error && <span className="error-autenticacion" role="alert">{error}</span>}
-                </section>
-
-                {esAnfitrion && partida.estado === 'esperando' && (
-                    <button type="button" onClick={handleIniciar} disabled={iniciando}>
-                        {iniciando ? 'Iniciando...' : 'Iniciar partida'}
+    if(cancelada) {
+        return (
+            <main className="contenedor">
+                <section className="tarjeta tarjeta-sala">
+                    <h1>Partida cancelada</h1>
+                    <p>La partida ya no existe o fue eliminada por el anfitrión.</p>
+                    <button className="boton-volver" type="button" onClick={onVolver}>
+                        Volver al inicio
                     </button>
-                )}
+                </section>
+            </main>
+        )
+    }
+        return (
+            <main className="contenedor">
+                <section className="tarjeta tarjeta-sala">
+                    <h1>Sala de espera</h1>
+                    <h2 className="nombre-partida">{partida.nombrePartida}</h2>
 
-                <button className="boton-volver" type="button" onClick={onVolver}>
-                    Volver al inicio
-                </button>
-            </section>
-        </main>
-    )
-}
+                    <div className="codigo-partida">
+                        <span>Código de la partida</span>
+                        <strong>{partida.codigo}</strong>
+                    </div>
+
+                    <section className="lista-jugadores" aria-labelledby="titulo-jugadores">
+                        <h2 id="titulo-jugadores">
+                            Jugadores ({jugadores.length}/{partida.cantidadJugadores})
+                        </h2>
+                        <ul>
+                            {jugadores.map((nombre, index) => (
+                                <li key={`${nombre}-${index}`}>
+                                    <span>{nombre}</span>
+                                    {nombre.toLowerCase() === partida.anfitrion.toLowerCase() && (
+                                        <span className="etiqueta-anfitrion">Anfitrión</span>
+                                    )}
+                                </li>
+                            ))}
+                            {Array.from({ length: espaciosLibres }, (_, index) => (
+                                <li className="espacio-libre" key={index}>
+                                    Esperando jugador...
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+
+                    <section className="contador-sala" aria-label="Contador de inicio">
+                        {partida.estado === 'cuenta_regresiva' && (
+                            <>
+                                <p>La partida comenzará en</p>
+                                <strong>{partida.cuentaRegresiva}</strong>
+                            </>
+                        )}
+                        {partida.estado === 'esperando' && (
+                            <>
+                                <p>La partida está esperando jugadores</p>
+                                <strong>--:--</strong>
+                            </>
+                        )}
+                        {partida.estado === 'jugando' && (
+                            <>
+                                <p>Juego en curso</p>
+                                <strong>
+                                    {partida.tipoJuego === 'tiempo'
+                                        ? `${partida.tiempoRestante ?? '--'} s`
+                                        : 'Meta de longitud'}
+                                </strong>
+                            </>
+                        )}
+                        {partida.estado === 'finalizada' && (
+                            <>
+                                <p>Partida finalizada</p>
+                                <strong>{partida.ganador || 'Empate'}</strong>
+                            </>
+                        )}
+                        {error && <span className="error-autenticacion" role="alert">{error}</span>}
+                    </section>
+
+                    {esAnfitrion && partida.estado === 'esperando' && (
+                        <button type="button" onClick={handleIniciar} disabled={iniciando}>
+                            {iniciando ? 'Iniciando...' : 'Iniciar partida'}
+                        </button>
+                    )}
+
+                    <button className="boton-volver" type="button" onClick={onVolver}>
+                        Volver al inicio
+                    </button>
+                </section>
+            </main>
+        )
+    }
 
 export default SalaEspera

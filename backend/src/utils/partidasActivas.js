@@ -5,6 +5,7 @@
  * Restricciones: Los datos se pierden cuando se reinicia el proceso del backend
  */
 const partidas = new Map()
+const observadores = []
 
 /*
  * Objetivo: Crear una copia independiente de una partida
@@ -20,6 +21,32 @@ function copiarPartida(partida) {
 }
 
 /*
+ * Objetivo: Registrar una función que se ejecuta cada vez que una partida cambia
+ * Entrada: Función que recibe el tipo de cambio ('actualizada' o 'eliminada') y los datos
+ * Salida: No retorna ningún valor
+ * Restricciones: Permite avisar los cambios por Socket.IO sin que los servicios conozcan los sockets
+ */
+function suscribirCambios(observador) {
+    observadores.push(observador)
+}
+
+/*
+ * Objetivo: Avisar a todas las funciones registradas que una partida cambió
+ * Entrada: Tipo de cambio y datos: la partida si se actualizó o el código si se eliminó
+ * Salida: No retorna ningún valor
+ * Restricciones: Si una función falla, no detiene a las demás ni a la operación original
+ */
+function notificarCambio(tipo, datos) {
+    observadores.forEach((observador) => {
+        try {
+            observador(tipo, datos)
+        } catch (error) {
+            console.error('No se pudo avisar el cambio de la partida:', error)
+        }
+    })
+}
+
+/*
  * Objetivo: Guardar una partida nueva
  * Entrada: Objeto completo de partida
  * Salida: true si se guardó; false si el código ya existe
@@ -31,6 +58,7 @@ function guardarPartida(partida) {
     }
 
     partidas.set(partida.codigo, copiarPartida(partida))
+    notificarCambio('actualizada', copiarPartida(partida))
     return true
 }
 
@@ -68,6 +96,7 @@ function actualizarPartida(codigo, cambios) {
     }
 
     Object.assign(partida, cambios)
+    notificarCambio('actualizada', copiarPartida(partida))
     return copiarPartida(partida)
 }
 
@@ -79,6 +108,11 @@ function actualizarPartida(codigo, cambios) {
  */
 function eliminarPartida(codigo) {
     return partidas.delete(String(codigo).trim())
+    const elimnada = partidas.delete(clave)
+    if (elimnada) {
+        notificarCambio('eliminada', clave)
+    }
+    return elimnada
 }
 
 module.exports = {
@@ -87,4 +121,5 @@ module.exports = {
     eliminarPartida,
     guardarPartida,
     obtenerPartidas,
+    suscribirCambios,
 }
