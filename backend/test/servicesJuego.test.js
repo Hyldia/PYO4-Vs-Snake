@@ -2,6 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const { autenticarNickname, desconectarNickname } = require('../src/services/servicesAutenticacion')
 const { crearPartida, eliminarPartida } = require('../src/services/servicesPartidas')
+const { actualizarPartida } = require('../src/services/servicesPartidas')
 const {
     iniciarPartida,
     validarVictoria,
@@ -15,10 +16,13 @@ test('inicia una partida con cuenta regresiva y acepta victoria por longitud', a
         nombrePartida: 'Prueba juego',
         cantidadJugadores: 2,
         tipoJuego: 'longitud',
+        valorModo: 20,
         tematica: 'clasica',
     })
+     try {
+        // Simula que un segundo jugador ya se unió, porque la partida solo inicia si está llena
+        actualizarPartida(partida.codigo, { jugadores: [anfitrion, 'Invitado'] })
 
-    try {
         const iniciada = await iniciarPartida(partida.codigo, anfitrion)
         assert.equal(iniciada.estado, 'jugando')
 
@@ -29,6 +33,26 @@ test('inicia una partida con cuenta regresiva y acepta victoria por longitud', a
         assert.equal(victoria.victoria, true)
         assert.equal(victoria.ganador, anfitrion)
         assert.equal(victoria.partida.estado, 'finalizada')
+    } finally {
+        eliminarPartida(partida.codigo, anfitrion)
+        desconectarNickname(anfitrion)
+    }
+})
+
+test('no permite iniciar una partida a la que le faltan jugadores', async () => {
+    const anfitrion = `HostIncompleta-${Date.now()}`
+    autenticarNickname(anfitrion)
+    const partida = crearPartida({
+        anfitrion,
+        nombrePartida: 'Partida incompleta',
+        cantidadJugadores: 2,
+        tipoJuego: 'tiempo',
+        valorModo: 1,
+        tematica: 'clasica',
+    })
+
+    try {
+        await assert.rejects(iniciarPartida(partida.codigo, anfitrion), /suficientes jugadores/)
     } finally {
         eliminarPartida(partida.codigo, anfitrion)
         desconectarNickname(anfitrion)

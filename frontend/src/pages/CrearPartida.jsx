@@ -1,10 +1,20 @@
 import { useState } from 'react'
 import { crearPartida } from '../services/partidas'
 
+/*
+ * Objetivo: Mostrar el formulario para crear una partida nueva
+*/
+
 function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
     const [error, setError] = useState('')
     const [cargando, setCargando] = useState(false)
-
+    const [modo, setModo] = useState('tiempo')
+    /*
+    * Objetivo: Enviar al backend los datos de la partida nueva
+    * Entrada: Evento submit del formulario
+    * Salida: No retorna valor; llama a onPartidaCreada o muestra el error
+    * Restricciones: No envía nada si el nombre está vacío
+    */
     async function handleSubmit(event) {
         event.preventDefault()
         const datos = new FormData(event.currentTarget)
@@ -22,6 +32,7 @@ function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
                 nombrePartida,
                 cantidadJugadores: Number(datos.get('jugadores')),
                 tipoJuego: datos.get('modo'),
+                valorModo: Number(datos.get('valorModo')),
                 tematica: datos.get('tematica'),
             })
             onPartidaCreada(partida)
@@ -74,15 +85,38 @@ function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
                         <legend>Modo</legend>
                         <div className="opciones-radio">
                             <label className="opcion-radio opcion-texto">
-                                <input type="radio" name="modo" value="tiempo" defaultChecked />
+                                <input
+                                    type="radio"
+                                    name="modo"
+                                    value="tiempo"
+                                    defaultChecked
+                                    onChange={() => setModo('tiempo')}
+                                />
                                 <span>Tiempo</span>
                             </label>
                             <label className="opcion-radio opcion-texto">
-                                <input type="radio" name="modo" value="longitud" />
+                                <input
+                                    type="radio"
+                                    name="modo"
+                                    value="longitud"
+                                    onChange={() => setModo('longitud')}
+                                />
                                 <span>Longitud</span>
                             </label>
                         </div>
                     </fieldset>
+
+                    <label className="campo-partida">
+                        {modo === 'tiempo' ? 'Duración (minutos)' : 'Largo a alcanzar'}
+                        <input
+                            key={modo}
+                            type="number"
+                            name="valorModo"
+                            min={modo === 'tiempo' ? 1 : 2}
+                            defaultValue={modo === 'tiempo' ? 3 : 10}
+                            required
+                        />
+                    </label>
 
                     <fieldset className="grupo-opciones">
                         <legend>Temática</legend>

@@ -1,11 +1,13 @@
+const config = require('../utils/configuracion')
 const {
     actualizarPartida,
     buscarPartida,
 } = require('../utils/partidasActivas')
+const { cancelarExpiracion } = require('./servicesPartidas')
 
-const CUENTA_REGRESIVA_SEGUNDOS = 3
-const DURACION_JUEGO_SEGUNDOS = 180
-const LONGITUD_OBJETIVO = 20
+const CUENTA_REGRESIVA_SEGUNDOS = config.cuentaRegresivaSegundos
+const DURACION_JUEGO_SEGUNDOS = config.duracionPorDefectoSegundos
+const LONGITUD_OBJETIVO = config.longitudObjetivoPorDefecto
 const temporizadoresJuego = new Map()
 
 /*
@@ -249,7 +251,7 @@ function cancelarTemporizadores(codigo) {
  * Objetivo: Iniciar una partida como anfitrion.
  * Entrada: Codigo y nickname del anfitrion.
  * Salida: Partida actualizada despues de la cuenta regresiva.
- * Restricciones: Solo el anfitrion puede iniciar y la partida debe estar esperando.
+ * Restricciones: Solo el anfitrion puede iniciar y la partida debe estar esperando y tener jugadores suficientes.
  */
 async function iniciarPartida(codigo, anfitrion) {
     const partida = obtenerPartidaActiva(codigo)
@@ -260,8 +262,12 @@ async function iniciarPartida(codigo, anfitrion) {
     if (partida.estado !== 'esperando') {
         throw new ErrorJuego('La partida ya comenzó o fue finalizada.', 409)
     }
+    if (partida.jugadores.length < partida.cantidadJugadores) {
+        throw new ErrorJuego('No hay suficientes jugadores para iniciar la partida.', 400)
+    }
+    cancelarExpiracion(partida.codigo) // Cancela la expiración de la partida al iniciar el juego
 
-    const iniciando = await iniciarCuentaRegresiva(codigo) // // Espera a que finalice la cuenta regresiva antes de comenzar oficialmente el juego
+    const iniciando = await iniciarCuentaRegresiva(codigo) // Espera a que finalice la cuenta regresiva antes de comenzar oficialmente el juego
     if (iniciando.tipoJuego === 'tiempo') {
         iniciarTemporizador(codigo)
     }
@@ -270,8 +276,6 @@ async function iniciarPartida(codigo, anfitrion) {
 
 module.exports = {
     ErrorJuego,
-    iniciarCuentaRegresiva,
     iniciarPartida,
-    iniciarTemporizador,
     validarVictoria,
 }
