@@ -19,6 +19,7 @@ test('crea partida con código único, permite modificarla y eliminarla', () => 
             nombrePartida: 'Partida de prueba',
             cantidadJugadores: 2,
             tipoJuego: 'tiempo',
+            valorModo: 3,
             tematica: 'clasica',
         }
         const partida = crearPartida(configuracion)

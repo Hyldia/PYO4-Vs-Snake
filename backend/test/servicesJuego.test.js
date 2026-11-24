@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const { autenticarNickname, desconectarNickname } = require('../src/services/servicesAutenticacion')
 const { crearPartida, eliminarPartida } = require('../src/services/servicesPartidas')
-const { actualizarPartida } = require('../src/services/servicesPartidas')
+const { actualizarPartida } = require('../src/utils/partidasActivas')
 const {
     iniciarPartida,
     validarVictoria,
