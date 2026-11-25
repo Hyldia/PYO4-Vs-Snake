@@ -172,7 +172,7 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
                     </button>
                 )}
 
-                <button className="boton-volver" type="button" onClick={handlerSalir}>
+                <button className="boton-volver" type="button" onClick={handleSalir}>
                     Volver al inicio
                 </button>
             </section>

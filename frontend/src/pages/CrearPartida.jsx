@@ -48,7 +48,8 @@ function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
                 cantidadJugadores: Number(datos.get('jugadores')),
                 tipoJuego: datos.get('modo'),
                 valorModo: Number(datos.get('valorModo')),
-                tematica: datos.get('tematica'),color,
+                tematica: datos.get('tematica'),
+                color,
             })
             onPartidaCreada(partida)
         } catch (error) {
@@ -147,12 +148,10 @@ function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
                         </div>
                     </fieldset>
 
-                    fieldset className="grupo-opciones">
+                    <fieldset className="grupo-opciones">
                         <legend>Tu color</legend>
                         <SelectorColor colores={colores} seleccionado={color} onSeleccionar={setColor} />
                     </fieldset>
-
-                    <button type="submit" disabled={cargando}></button>
 
                     <button type="submit" disabled={cargando}>
                         {cargando ? 'Creando...' : 'Crear partida'}
