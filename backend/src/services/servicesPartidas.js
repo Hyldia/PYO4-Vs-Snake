@@ -1,6 +1,8 @@
 const { randomInt } = require('node:crypto')
 const config = require('../utils/configuracion')
 const { existeJugador } = require('../utils/jugadoresConectados')
+const Jugador = require('../models/Jugador')
+const Partida = require('../models/Partida')
 const {
     actualizarPartida: actualizarEnMemoria,
     buscarPartida: buscarEnMemoria,
@@ -90,6 +92,18 @@ function validarValorModo(tipoJuego, valorModo) {
     return { duracionSegundos: null, longitudObjetivo: valor }
 }
 /*
+ * Objetivo: Validar que el color elegido exista en la paleta de config.json
+ * Entrada: Color elegido por el jugador
+ * Salida: El mismo color si es válido
+ * Restricciones: Debe ser uno de los colores de config.json
+ */
+function validarColor(color) {
+    if (!config.colores.includes(color)) {
+        throw new ErrorPartida('Debes elegir un color válido.')
+    }
+    return color
+}
+/*
  * Objetivo: Valida que el anfitrión tenga una sesión activa
  * Entrada: Nickname del anfitrión
  * Salida: Nickname sin espacios al inicio ni al final
@@ -163,20 +177,18 @@ function crearPartida(configuracion) {
     const nombrePartida = validarNombre(configuracion.nombrePartida)
     const { cantidadJugadores, tipoJuego, tematica } = validarConfiguracion(configuracion)
     const { duracionSegundos, longitudObjetivo } = validarValorModo(tipoJuego, configuracion.valorModo)
+    const color = validarColor(configuracion.color)
     const codigo = generarCodigo()
 
-    const partida = {
+    const partida = new Partida({
         codigo,
         nombrePartida,
-        anfitrion,
-        jugadores: [anfitrion], // El creador de la partida es el primer jugador
         cantidadJugadores,
         tipoJuego,
         duracionSegundos,
         longitudObjetivo,
         tematica,
-        estado: 'esperando',
-    }
+    }, new Jugador(anfitrion, color))
 
     if (!guardarPartida(partida)) {
         throw new ErrorPartida('El código generado ya está en uso. Intenta de nuevo.', 503)
@@ -203,7 +215,7 @@ function obtenerPartida(codigo) {
  * Restricciones: Solo incluye partidas que no han sido eliminadas ni expirado
  */
 function listarPartidas() {
-    return obtenerPartidas()
+    return obtenerPartidas().filter((partida) => partida.estado === 'esperando') //se cambio porque solo se quieren mostrar las partidas que estan en espera y no las que ya comenzaron
 }
 
 /*
@@ -288,7 +300,75 @@ function eliminarPartida(codigo, anfitrion) {
     eliminarDeMemoria(partida.codigo)
     return true
 }
+/*
+ * Objetivo: Agregar un jugador a una partida en espera con el color que eligió
+ * Entrada: Código de la partida, nickname del jugador y color elegido
+ * Salida: Partida actualizada con el nuevo jugador
+ * Restricciones:
+        - La partida debe existir, estar en espera y tener cupo
+        - El color debe ser válido y no estar ocupado por otro jugador
+        - Si el jugador ya estaba en la partida, se devuelve la partida sin cambios
+ */
+function unirsePartida(codigo, nickname, color) {
+    if (typeof nickname !== 'string' || !nickname.trim()) {
+        throw new ErrorPartida('Debes indicar tu nickname.')
+    }
+    const partida = buscarEnMemoria(codigo)
+    if (!partida) {
+        throw new ErrorPartida('No se encontró la partida.', 404)
+    }
+    if (partida.buscarJugador(nickname)) {
+        return partida
+    }
+    if (partida.estado !== 'esperando') {
+        throw new ErrorPartida('La partida ya comenzó.', 409)
+    }
+    if (partida.estaLlena()) {
+        throw new ErrorPartida('La partida ya está llena.', 409)
+    }
+    if (partida.colorOcupado(validarColor(color))) {
+        throw new ErrorPartida('Ese color ya lo eligió otro jugador.', 409)
+    }
 
+    partida.agregarJugador(new Jugador(nickname.trim(), color))
+    return actualizarEnMemoria(codigo, { jugadores: partida.jugadores })
+}
+
+/*
+ * Objetivo: Sacar a un jugador de una partida que todavía está en espera
+ * Entrada: Código de la partida y nickname del jugador
+ * Salida: Partida actualizada, o null si la partida se canceló o no había nada que cambiar
+ * Restricciones:
+        - Solo aplica a partidas en espera
+        - Si sale el anfitrión, la partida se cancela para todos
+ */
+function salirDePartida(codigo, nickname) {
+    const partida = buscarEnMemoria(codigo)
+    if (!partida || partida.estado !== 'esperando' || !partida.buscarJugador(nickname)) {
+        return null
+    }
+
+    if (partida.esAnfitrion(nickname)) {
+        cancelarExpiracion(partida.codigo)
+        eliminarDeMemoria(partida.codigo)
+        return null
+    }
+
+    partida.quitarJugador(nickname)
+    return actualizarEnMemoria(codigo, { jugadores: partida.jugadores })
+}
+
+/*
+ * Objetivo: Sacar a un jugador de todas las partidas en espera donde esté
+ * Entrada: Nickname del jugador
+ * Salida: No retorna ningún valor
+ * Restricciones: Se usa cuando el jugador cierra la pestaña o pierde la conexión
+ */
+function salirDeTodasLasPartidas(nickname) {
+    listarPartidas()
+        .filter((partida) => partida.buscarJugador(nickname))
+        .forEach((partida) => salirDePartida(partida.codigo, nickname))
+}
 module.exports = {
     ErrorPartida,
     cancelarExpiracion,
@@ -297,4 +377,7 @@ module.exports = {
     listarPartidas,
     modificarConfiguracion,
     obtenerPartida,
+    salirDePartida,
+    salirDeTodasLasPartidas,
+    unirsePartida,
 }

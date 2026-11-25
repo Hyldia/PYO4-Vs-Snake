@@ -156,16 +156,17 @@ function determinarGanadorPorTiempo(partida) {
     let ganador = null
     let empate = false
 
-    partida.jugadores.forEach((nickname) => {
-        const longitud = Number(longitudes[nickname]) || 0
+    partida.jugadores.forEach((jugador) => {
+        const longitud = Number(longitudes[jugador.nickname]) || 0
         if (longitud > mayor) {
             mayor = longitud
-            ganador = nickname
+            ganador = jugador.nickname
             empate = false
         } else if (longitud === mayor) {
             empate = true
         }
     })
+    
 
     return empate ? null : ganador
 }
@@ -262,7 +263,7 @@ async function iniciarPartida(codigo, anfitrion) {
     if (partida.estado !== 'esperando') {
         throw new ErrorJuego('La partida ya comenzó o fue finalizada.', 409)
     }
-    if (partida.jugadores.length < partida.cantidadJugadores) {
+    if (!partida.estaLlena()) {
         throw new ErrorJuego('No hay suficientes jugadores para iniciar la partida.', 400)
     }
     cancelarExpiracion(partida.codigo) // Cancela la expiración de la partida al iniciar el juego
