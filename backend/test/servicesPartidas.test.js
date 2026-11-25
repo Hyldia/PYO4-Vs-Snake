@@ -29,10 +29,12 @@ test('crea partida con código único, permite modificarla y eliminarla', () => 
         partidas.push(partida)
         const otraPartida = crearPartida(configuracion)
         partidas.push(otraPartida)
-
+        assert.equal(partida.jugadores.length, 1)
+        assert.equal(partida.jugadores[0].nickname, anfitrion)
+        assert.equal(partida.jugadores[0].color, '#e53935')
         assert.match(partida.codigo, /^\d{6}$/)
         assert.notEqual(partida.codigo, otraPartida.codigo)
-        assert.deepEqual(partida.jugadores, [anfitrion])
+
         assert.equal(partida.estado, 'esperando')
         assert.equal(partida.jugadores[0].color, '#e53935')
         assert.equal(partida.duracionSegundos, 180)
