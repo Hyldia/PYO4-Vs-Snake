@@ -287,3 +287,87 @@ body{
     color:#94A3B8;
     font-size:13px;
 }
+/* ➕ AGREGAR desde aquí hasta el final */
+.selector-color{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+}
+
+.tarjeta .opcion-color{
+    width:40px;
+    height:40px;
+    padding:0;
+    border:3px solid transparent;
+    border-radius:50%;
+}
+
+.tarjeta .opcion-color.seleccionado{
+    border-color:#F8FAFC;
+}
+
+.tarjeta .opcion-color:disabled{
+    cursor:not-allowed;
+    opacity:.2;
+}
+
+.punto-color{
+    display:inline-block;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+}
+
+.jugador-unido{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+}
+
+.lista-partidas{
+    display:grid;
+    gap:10px;
+    margin-bottom:20px;
+    padding:0;
+    list-style:none;
+}
+
+.tarjeta .partida-disponible{
+    display:grid;
+    gap:6px;
+    padding:14px;
+    border:1px solid rgba(203,213,225,.2);
+    background:#0F172A;
+    color:#CBD5E1;
+    font-size:14px;
+    font-weight:400;
+    text-align:left;
+}
+
+.tarjeta .partida-disponible:hover{
+    background:#0F172A;
+    border-color:#22C55E;
+}
+
+.tarjeta .partida-disponible.elegida{
+    border-color:#22C55E;
+    box-shadow:0 0 0 1px #22C55E;
+}
+
+.tarjeta .partida-disponible:disabled{
+    cursor:not-allowed;
+    opacity:.5;
+}
+
+.partida-titulo{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    color:#F8FAFC;
+}
+
+.partida-jugadores{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+}

@@ -4,7 +4,7 @@ import CrearPartida from './pages/CrearPartida'
 import Inicio from './pages/Inicio'
 import SalaEspera from './pages/SalaEspera'
 import { conectarSocket } from './services/socket'
-//import { desconectarNickname } from './services/autenticacion'
+import UnirsePartida from './pages/UnirsePartida'
 import './styles.css'
 
 function App() {
@@ -34,6 +34,18 @@ function App() {
     )
   }
 
+  if (pantalla === 'unirse') {
+    return (
+      <UnirsePartida
+        onVolver={() => setPantalla('inicio')}
+        onUnido={(partidaUnida) => {
+          setPartida(partidaUnida)
+          setPantalla('sala')
+        }}
+      />
+    )
+  }
+
   if (pantalla === 'sala') {
     return (
       <SalaEspera
@@ -44,7 +56,8 @@ function App() {
     )
   }
 
-  return <Inicio jugador={jugador} onCrearPartida={() => setPantalla('crear')} />
+  return <Inicio jugador={jugador} onCrearPartida={() => setPantalla('crear')} 
+  onUnirse={() => setPantalla('unirse')} />
 }
 
 export default App

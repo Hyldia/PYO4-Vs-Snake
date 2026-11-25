@@ -14,10 +14,7 @@ const observadores = []
  * Restricciones: Los campos de la partida son valores simples salvo la lista de jugadores
  */
 function copiarPartida(partida) {
-    return {
-        ...partida,
-        jugadores: [...partida.jugadores],
-    }
+    return partida.copiar() //se cambio para que se use el metodo copiar de la clase partida
 }
 
 /*
