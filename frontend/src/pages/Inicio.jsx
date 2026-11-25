@@ -1,4 +1,4 @@
-function Inicio({ jugador, onCrearPartida }) {
+function Inicio({ jugador, onCrearPartida, onUnirse }) {
     return (
         <main className="contenedor">
             <section className="tarjeta inicio">
@@ -16,6 +16,9 @@ function Inicio({ jugador, onCrearPartida }) {
                     <article className="opcion-juego">
                         <h2>Unirse a una partida</h2>
                         <p>Entra a una partida creada por otro jugador.</p>
+                        <button type="button" onClick={onUnirse}>
+                            Unirse a una partida
+                        </button>
                     </article>
                 </div>
             </section>

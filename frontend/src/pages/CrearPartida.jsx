@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import SelectorColor from '../components/SelectorColor'
 import { crearPartida } from '../services/partidas'
+import { obtenerColores } from '../services/socket'
 
 /*
  * Objetivo: Mostrar el formulario para crear una partida nueva
@@ -9,6 +11,15 @@ function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
     const [error, setError] = useState('')
     const [cargando, setCargando] = useState(false)
     const [modo, setModo] = useState('tiempo')
+    const [colores, setColores] = useState([])
+    const [color, setColor] = useState('')
+
+    useEffect(() => {
+        obtenerColores().then((lista) => {
+            setColores(lista)
+            setColor(lista[0])
+        })
+    }, [])
     /*
     * Objetivo: Enviar al backend los datos de la partida nueva
     * Entrada: Evento submit del formulario
@@ -23,6 +34,10 @@ function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
         if (!nombrePartida) {
             return
         }
+        if (!color) {
+            setError('Elige un color.')
+            return
+        }
 
         setError('')
         setCargando(true)
@@ -33,7 +48,7 @@ function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
                 cantidadJugadores: Number(datos.get('jugadores')),
                 tipoJuego: datos.get('modo'),
                 valorModo: Number(datos.get('valorModo')),
-                tematica: datos.get('tematica'),
+                tematica: datos.get('tematica'),color,
             })
             onPartidaCreada(partida)
         } catch (error) {
@@ -131,6 +146,13 @@ function CrearPartida({ jugador, onVolver, onPartidaCreada }) {
                             </label>
                         </div>
                     </fieldset>
+
+                    fieldset className="grupo-opciones">
+                        <legend>Tu color</legend>
+                        <SelectorColor colores={colores} seleccionado={color} onSeleccionar={setColor} />
+                    </fieldset>
+
+                    <button type="submit" disabled={cargando}></button>
 
                     <button type="submit" disabled={cargando}>
                         {cargando ? 'Creando...' : 'Crear partida'}

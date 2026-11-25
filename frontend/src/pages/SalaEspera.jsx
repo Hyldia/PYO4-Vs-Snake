@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { iniciarPartida } from '../services/partidas'
-import { entrarSala, salirSala, socket } from '../services/socket'
+import { entrarSala, salirSala, salirPartida, socket } from '../services/socket'
 
 /*
 * Objetivo: Mostrar la sala de espera de una partida con sus cambios en tiempo real
@@ -14,7 +14,7 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
     const [error, setError] = useState('')
     const [iniciando, setIniciando] = useState(false)
     const esAnfitrion = jugador.toLowerCase() === partida.anfitrion.toLowerCase()
-    const jugadores = partida.jugadores || [jugador]
+    const jugadores = partida.jugadores || []
     const espaciosLibres = Math.max(partida.cantidadJugadores - jugadores.length, 0)
 
     useEffect(() => {
@@ -74,6 +74,16 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
             setIniciando(false)
         }
     }
+    /*
+     * Objetivo: Salir de la partida y volver al inicio
+     * Entrada: No recibe parámetros
+     * Salida: No retorna valor; cambia a la pantalla de inicio
+     * Restricciones: Si sale el anfitrión, la partida se cancela para todos
+     */
+    function handleSalir() {
+        salirPartida(partida.codigo)
+        onVolver()
+    }
 
     if (cancelada) {
 
@@ -105,10 +115,13 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
                         Jugadores ({jugadores.length}/{partida.cantidadJugadores})
                     </h2>
                     <ul>
-                        {jugadores.map((nombre, index) => (
-                            <li key={`${nombre}-${index}`}>
-                                <span>{nombre}</span>
-                                {nombre.toLowerCase() === partida.anfitrion.toLowerCase() && (
+                        {jugadores.map((jugadorSala) => (
+                            <li key={jugadorSala.nickname}>
+                                <span className="jugador-unido">
+                                    <span className="punto-color" style={{ backgroundColor: jugadorSala.color }} />
+                                    {jugadorSala.nickname}
+                                </span>
+                                {jugadorSala.nickname.toLowerCase() === partida.anfitrion.toLowerCase() && (
                                     <span className="etiqueta-anfitrion">Anfitrión</span>
                                 )}
                             </li>
@@ -159,7 +172,7 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
                     </button>
                 )}
 
-                <button className="boton-volver" type="button" onClick={onVolver}>
+                <button className="boton-volver" type="button" onClick={handlerSalir}>
                     Volver al inicio
                 </button>
             </section>
