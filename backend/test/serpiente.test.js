@@ -82,3 +82,69 @@ test('calcula la siguiente cabeza en cada dirección sin modificar la serpiente'
         assert.deepEqual(serpiente.cabeza, { x: 5, y: 3, color: 'rojo' })
     }
 })
+
+test('avanza desplazando el cuerpo y conservando el color de cada segmento', () => {
+    const serpiente = new Serpiente('Jugador', 'rojo', { x: 5, y: 3 })
+    serpiente.segmentos.push(
+        { x: 4, y: 3, color: 'azul' },
+        { x: 3, y: 3, color: 'verde' },
+    )
+
+    serpiente.avanzar({ x: 5, y: 2 })
+
+    assert.deepEqual(serpiente.segmentos, [
+        { x: 5, y: 2, color: 'rojo' },
+        { x: 5, y: 3, color: 'azul' },
+        { x: 4, y: 3, color: 'verde' },
+    ])
+})
+
+test('al crecer agrega un segmento del color indicado en la posición anterior de la cola', () => {
+    const serpiente = new Serpiente('Jugador', 'rojo', { x: 5, y: 3 })
+
+    serpiente.avanzar({ x: 6, y: 3 }, 'azul')
+    assert.deepEqual(serpiente.segmentos, [
+        { x: 6, y: 3, color: 'rojo' },
+        { x: 5, y: 3, color: 'azul' },
+    ])
+
+    serpiente.avanzar({ x: 7, y: 3 }, 'verde')
+    assert.deepEqual(serpiente.segmentos, [
+        { x: 7, y: 3, color: 'rojo' },
+        { x: 6, y: 3, color: 'azul' },
+        { x: 5, y: 3, color: 'verde' },
+    ])
+})
+
+test('la penalización quita segmentos de la cola y detiene la serpiente', () => {
+    const serpiente = new Serpiente('Jugador', 'rojo', { x: 5, y: 3 })
+    serpiente.segmentos.push(
+        { x: 4, y: 3, color: 'azul' },
+        { x: 3, y: 3, color: 'verde' },
+        { x: 2, y: 3, color: 'amarillo' },
+    )
+    serpiente.cambiarDireccion('up')
+
+    assert.equal(serpiente.penalizar(2), 2)
+    assert.deepEqual(serpiente.segmentos, [
+        { x: 5, y: 3, color: 'rojo' },
+        { x: 4, y: 3, color: 'azul' },
+    ])
+    assert.equal(serpiente.estado, 'detenida')
+    assert.equal(serpiente.direccionPendiente, null)
+    serpiente.aplicarDireccion()
+    assert.equal(serpiente.direccion, 'right')
+    assert.equal(serpiente.cambiarDireccion('up'), true)
+    assert.equal(serpiente.estado, 'activa')
+})
+
+test('la penalización conserva al menos la cabeza y devuelve las celdas perdidas', () => {
+    const serpiente = new Serpiente('Jugador', 'rojo', { x: 5, y: 3 })
+    serpiente.segmentos.push({ x: 4, y: 3, color: 'azul' })
+
+    assert.equal(serpiente.penalizar(0), 0)
+    assert.equal(serpiente.largo, 2)
+    assert.equal(serpiente.penalizar(10), 1)
+    assert.deepEqual(serpiente.segmentos, [{ x: 5, y: 3, color: 'rojo' }])
+    assert.equal(serpiente.penalizar(1), 0)
+})

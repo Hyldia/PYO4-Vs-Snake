@@ -104,17 +104,45 @@ class Serpiente {
 
     /*
      * Objetivo: Avanzar una celda; cada segmento ocupa el lugar del anterior
-     * Entrada: Celda {x, y} destino de la cabeza
+     * Entrada:
+     *      - nuevaCabeza: celda {x, y} destino de la cabeza
+     *      - colorCrecimiento: si viene, la serpiente crece un segmento de ese color
      * Salida: No retorna ningún valor
-     * Restricciones: Solo se mueven las posiciones
+     * Restricciones:
+     *      - Solo se mueven las posiciones; el color de cada segmento se queda con él
+     *        (necesario para Fruit Mix)
+     *      - Al crecer, el segmento nuevo ocupa la celda que dejó la cola, por lo que
+     *        el cuerpo queda extendido hacia adelante respecto a su posición anterior
      */
-    avanzar(nuevaCabeza) {
+    avanzar(nuevaCabeza, colorCrecimiento = null) {
+        const cola = this.segmentos[this.segmentos.length - 1]
+        const colaAnterior = { x: cola.x, y: cola.y }
+
         for (let i = this.segmentos.length - 1; i > 0; i -= 1) {
             this.segmentos[i].x = this.segmentos[i - 1].x
             this.segmentos[i].y = this.segmentos[i - 1].y
         }
         this.segmentos[0].x = nuevaCabeza.x
         this.segmentos[0].y = nuevaCabeza.y
+
+        if (colorCrecimiento) {
+            this.segmentos.push({ ...colaAnterior, color: colorCrecimiento })
+        }
+    }
+
+    /*
+     * Objetivo: Penalizar por choque quitando segmentos desde la cola y detener la serpiente
+     * Entrada: Cantidad de celdas a perder
+     * Salida: Cantidad de celdas realmente perdidas
+     * Restricciones: El largo nunca baja de 1
+     */
+    penalizar(celdas) {
+        const conservar = Math.max(1, this.largo - celdas)
+        const perdidas = this.largo - conservar
+        this.segmentos.length = conservar
+        this.direccionPendiente = null
+        this.estado = 'detenida'
+        return perdidas
     }
 
     /*
