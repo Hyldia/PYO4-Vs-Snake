@@ -105,3 +105,48 @@ export function unirsePartida(codigo, color) {
 export function salirPartida(codigo) {
     socket.emit('salirPartida', codigo)
 }
+/*
+ * Objetivo: Pedir al servidor que cargue el tablero para todos los jugadores
+ * Entrada: Código de la partida
+ * Salida: Promesa con la partida actualizada
+ * Restricciones: La partida debe estar llena
+ */
+export function entrarJuego(codigo) {
+    return new Promise((resolve, reject) => {
+        socket.emit('entrarJuego', codigo, (respuesta) => {
+            if (respuesta.error) {
+                reject(new Error(respuesta.error))
+            } else {
+                resolve(respuesta.partida)
+            }
+        })
+    })
+}
+
+/*
+ * Objetivo: Avisar al servidor que se presionó la tecla "u"
+ * Entrada: Código de la partida
+ * Salida: Promesa con la partida cuando termina la cuenta regresiva
+ * Restricciones: Solo funciona cuando todos ya están en el tablero
+ */
+export function iniciarJuego(codigo) {
+    return new Promise((resolve, reject) => {
+        socket.emit('iniciarJuego', codigo, (respuesta) => {
+            if (respuesta.error) {
+                reject(new Error(respuesta.error))
+            } else {
+                resolve(respuesta.partida)
+            }
+        })
+    })
+}
+
+/*
+ * Objetivo: Enviar al servidor la dirección elegida con las flechas
+ * Entrada: Código de la partida y dirección ('up', 'down', 'left' o 'right')
+ * Salida: No retorna ningún valor
+ * Restricciones: El servidor es quien mueve la serpiente; aquí solo se avisa la tecla
+ */
+export function cambiarDireccion(codigo, direccion) {
+    socket.emit('cambiarDireccion', { codigo, direccion })
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Autenticacion from './pages/Autenticacion'
 import CrearPartida from './pages/CrearPartida'
 import Inicio from './pages/Inicio'
+import Juego from './pages/Juego'
 import SalaEspera from './pages/SalaEspera'
 import { conectarSocket } from './services/socket'
 import UnirsePartida from './pages/UnirsePartida'
@@ -49,6 +50,18 @@ function App() {
   if (pantalla === 'sala') {
     return (
       <SalaEspera
+        partida={partida}
+        onVolver={() => setPantalla('inicio')}
+        onEntrar={ (partidaEnTablero) => {
+          setPartida(partidaEnTablero)
+          setPantalla('juego')
+        }}
+      />
+    )
+  }
+  if (pantalla === 'juego') {
+    return (
+      <Juego
         jugador={jugador}
         partida={partida}
         onVolver={() => setPantalla('inicio')}

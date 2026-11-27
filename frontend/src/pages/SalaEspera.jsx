@@ -1,21 +1,20 @@
 import { useEffect, useState } from 'react'
-import { iniciarPartida } from '../services/partidas'
-import { entrarSala, salirSala, salirPartida, socket } from '../services/socket'
+import { entrarJuego, entrarSala, salirSala, salirPartida, socket } from '../services/socket'
 
 /*
 * Objetivo: Mostrar la sala de espera de una partida con sus cambios en tiempo real
- * Entrada: Nickname del jugador, partida inicial y función para volver al inicio
- * Salida: Pantalla con los jugadores, el estado de la partida y el botón de iniciar
- * Restricciones: Solo el anfitrión puede iniciar; si la partida se elimina se muestra un aviso
+ * Entrada: Partida inicial, función para volver al inicio y función para pasar al tablero
+ * Salida: Pantalla con los jugadores, sus colores y el botón Entrar
+ * Restricciones: Entrar se habilita cuando la partida está llena; si la partida se elimina se muestra un aviso
 */
-function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
+function SalaEspera({ partida: partidaInicial, onVolver, onEntrar }) {
     const [partida, setPartida] = useState(partidaInicial)
     const [cancelada, setCancelada] = useState(false)
     const [error, setError] = useState('')
-    const [iniciando, setIniciando] = useState(false)
-    const esAnfitrion = jugador.toLowerCase() === partida.anfitrion.toLowerCase()
+    const [entrando, setEntrando] = useState(false)
     const jugadores = partida.jugadores || []
     const espaciosLibres = Math.max(partida.cantidadJugadores - jugadores.length, 0)
+    const llena = jugadores.length >= partida.cantidadJugadores
 
     useEffect(() => {
         const codigo = partidaInicial.codigo
@@ -45,6 +44,7 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
 
         socket.on('partidaActualizada', manejarActualizacion)
         socket.on('partidaEliminada', manejarEliminacion)
+
         entrarSala(codigo)
             .then(setPartida)
             .catch(() => setCancelada(true))
@@ -57,23 +57,30 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
         }
     }, [partidaInicial.codigo])
 
+    // Cuando alguien presiona Entrar, la partida sale de 'esperando' y a todos se les carga el tablero
+    useEffect(() => {
+        if (partida.estado !== 'esperando') {
+            onEntrar(partida)
+        }
+    }, [partida, onEntrar])
+
     /*
-     * Objetivo: Pedir al servidor que inicie la partida
+     * Objetivo: Pedir al servidor que cargue el tablero para todos los jugadores
      * Entrada: No recibe parámetros
-     * Salida: No retorna valor; los cambios llegan por Socket.IO
-     * Restricciones: Solo el anfitrión ve el botón y la partida debe estar llena
+     * Salida: No retorna valor; el cambio de pantalla llega por Socket.IO
+     * Restricciones: Solo se puede cuando la partida está llena
      */
-    async function handleIniciar() {
+    async function handleEntrar() {
         setError('')
-        setIniciando(true)
+        setEntrando(true)
         try {
-            await iniciarPartida(partida.codigo, jugador)
+            await entrarJuego(partida.codigo)
         } catch (error) {
-            setError(error.message || 'No se pudo iniciar la partida.')
-        } finally {
-            setIniciando(false)
+            setError(error.message || 'No se pudo entrar al tablero.')
+            setEntrando(false)
         }
     }
+
     /*
      * Objetivo: Salir de la partida y volver al inicio
      * Entrada: No recibe parámetros
@@ -135,42 +142,18 @@ function SalaEspera({ jugador, partida: partidaInicial, onVolver }) {
                 </section>
 
                 <section className="contador-sala" aria-label="Contador de inicio">
-                    {partida.estado === 'cuenta_regresiva' && (
-                        <>
-                            <p>La partida comenzará en</p>
-                            <strong>{partida.cuentaRegresiva}</strong>
-                        </>
-                    )}
                     {partida.estado === 'esperando' && (
                         <>
-                            <p>La partida está esperando jugadores</p>
+                            <p>{llena ? 'La partida está completa' : 'La partida está esperando jugadores'}</p>
                             <strong>--:--</strong>
-                        </>
-                    )}
-                    {partida.estado === 'jugando' && (
-                        <>
-                            <p>Juego en curso</p>
-                            <strong>
-                                {partida.tipoJuego === 'tiempo'
-                                    ? `${partida.tiempoRestante ?? '--'} s`
-                                    : `Meta: largo ${partida.longitudObjetivo}`}
-                            </strong>
-                        </>
-                    )}
-                    {partida.estado === 'finalizada' && (
-                        <>
-                            <p>Partida finalizada</p>
-                            <strong>{partida.ganador || 'Empate'}</strong>
                         </>
                     )}
                     {error && <span className="error-autenticacion" role="alert">{error}</span>}
                 </section>
 
-                {esAnfitrion && partida.estado === 'esperando' && (
-                    <button type="button" onClick={handleIniciar} disabled={iniciando}>
-                        {iniciando ? 'Iniciando...' : 'Iniciar partida'}
-                    </button>
-                )}
+                <button type="button" onClick={handleEntrar} disabled={!llena || entrando}>
+                    {entrando ? 'Entrando...' : 'Entrar'}
+                </button>
 
                 <button className="boton-volver" type="button" onClick={handleSalir}>
                     Volver al inicio
