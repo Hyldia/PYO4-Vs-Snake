@@ -1,5 +1,6 @@
 const config = require('../utils/configuracion')
 const { autenticarNickname, desconectarNickname } = require('../services/servicesAutenticacion')
+const { ErrorJuego, entrarAlTablero, iniciarPartida } = require('../services/servicesJuego')
 const {
     ErrorPartida,
     listarPartidas,
@@ -9,6 +10,7 @@ const {
 } = require('../services/servicesPartidas')
 const { existeJugador } = require('../utils/jugadoresConectados')
 const { buscarPartida, suscribirCambios } = require('../utils/partidasActivas')
+const { iniciarPartida } = require('../../../frontend/src/services/partidas') 
 
 const SALA_LISTA = 'lista-partidas' // Sala de quienes están viendo la lista de partidas para unirse
 
@@ -32,6 +34,19 @@ function responder(callback, datos) {
     if (typeof callback === 'function') {
         callback(datos)
     }
+}
+/*
+ * Objetivo: Obtener el mensaje de error que se le muestra al jugador
+ * Entrada: Error capturado y mensaje por defecto
+ * Salida: Texto del error
+ * Restricciones: Los errores inesperados se muestran en la consola del servidor y al jugador le llega el mensaje por defecto
+ */
+function mensajeError(error, mensajePorDefecto) {
+    if (error instanceof ErrorPartida || error instanceof ErrorJuego) {
+        return error.message
+    }
+    console.error(mensajePorDefecto, error)
+    return mensajePorDefecto
 }
 
 /*
@@ -117,6 +132,22 @@ function manejarConexion(socket) {
     socket.on('salirPartida', (codigo) => {
         salirDePartida(codigo, socket.data.nickname)
         socket.leave(nombreSala(codigo))
+    })
+    // Con la partida llena, un jugador presiona "Entrar" y a todos se les carga el tablero
+    socket.on('entrarJuego', (codigo, callback) => {
+        try {
+            const partida = entrarAlTablero(codigo, socket.data.nickname)
+            responder(callback, { partida })
+        } catch (error) {
+            responder(callback, { error: mensajeError(error, 'No se pudo entrar al tablero.') })
+        }
+    })
+
+    // Un jugador presiona la tecla "u": el servidor hace la cuenta 3, 2, 1 para toda la sala
+    socket.on('iniciarJuego', (codigo, callback) => {
+        iniciarPartida(codigo, socket.data.nickname)
+            .then((partida) => responder(callback, { partida }))
+            .catch((error) => responder(callback, { error: mensajeError(error, 'No se pudo iniciar la partida.') }))
     })
 
     // Al cerrar la pestaña: sale de las partidas en espera y se libera el nickname

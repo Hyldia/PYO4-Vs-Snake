@@ -4,11 +4,12 @@ const { autenticarNickname, desconectarNickname } = require('../src/services/ser
 const { crearPartida, eliminarPartida, unirsePartida } = require('../src/services/servicesPartidas')
 
 const {
+    entrarAlTablero,
     iniciarPartida,
     validarVictoria,
 } = require('../src/services/servicesJuego')
 
-test('inicia una partida con cuenta regresiva y acepta victoria por longitud', async () => {
+test('entra al tablero, arranca con la tecla u y acepta victoria por longitud', async () => {
     const anfitrion = `HostJuego-${Date.now()}`
     autenticarNickname(anfitrion)
     const partida = crearPartida({
@@ -25,7 +26,10 @@ test('inicia una partida con cuenta regresiva y acepta victoria por longitud', a
         // Un segundo jugador se une para que la partida quede llena
         unirsePartida(partida.codigo, 'Invitado', '#1e88e5')
 
-        const iniciada = await iniciarPartida(partida.codigo, anfitrion)
+        const enTablero = entrarAlTablero(partida.codigo, 'Invitado')
+        assert.equal(enTablero.estado, 'en_tablero')
+
+        const iniciada = await iniciarPartida(partida.codigo, "Invitado")
         assert.equal(iniciada.estado, 'jugando')
 
         const victoria = validarVictoria(partida.codigo, {
@@ -41,7 +45,7 @@ test('inicia una partida con cuenta regresiva y acepta victoria por longitud', a
     }
 })
 
-test('no permite iniciar una partida a la que le faltan jugadores', async () => {
+test('no permite entrar al tablero a una partida a la que le faltan jugadores', async () => {
     const anfitrion = `HostIncompleta-${Date.now()}`
     autenticarNickname(anfitrion)
     const partida = crearPartida({
@@ -53,9 +57,30 @@ test('no permite iniciar una partida a la que le faltan jugadores', async () => 
         tematica: 'clasica',
         color: '#e53935',
     })
+    try {
+        assert.throws(() => entrarAlTablero(partida.codigo, anfitrion), /suficientes jugadores/)
+    } finally {
+        eliminarPartida(partida.codigo, anfitrion)
+        desconectarNickname(anfitrion)
+    }
+
+})
+test('la tecla u no funciona antes de entrar al tablero', async () => {
+    const anfitrion = `HostSinTablero-${Date.now()}`
+    autenticarNickname(anfitrion)
+    const partida = crearPartida({
+        anfitrion,
+        nombrePartida: 'Sin tablero',
+        cantidadJugadores: 2,
+        tipoJuego: 'tiempo',
+        valorModo: 1,
+        tematica: 'clasica',
+        color: '#e53935',
+    })
 
     try {
-        await assert.rejects(iniciarPartida(partida.codigo, anfitrion), /suficientes jugadores/)
+        unirsePartida(partida.codigo, 'Otro', '#1e88e5')
+        await assert.rejects(iniciarPartida(partida.codigo, anfitrion), /entrar al tablero/)
     } finally {
         eliminarPartida(partida.codigo, anfitrion)
         desconectarNickname(anfitrion)

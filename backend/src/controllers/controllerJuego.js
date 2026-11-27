@@ -1,6 +1,5 @@
 const {
     ErrorJuego,
-    iniciarPartida,
     validarVictoria,
 } = require('../services/servicesJuego')
 
@@ -18,24 +17,6 @@ function responderConError(res, error) {
 }
 
 /*
- * Objetivo: Iniciar una partida desde el controlador.
- * Entrada: Codigo de partida y nickname del anfitrion.
- * Salida: Codigo HTTP 200 y partida actualizada.
- * Restricciones: Solo el anfitrion puede iniciar la partida.
- */
-async function iniciarPartidaJuego(req, res) {
-    try {
-        const partida = await iniciarPartida(
-            req.params.codigo,
-            req.body?.anfitrion,
-        )
-        return res.status(200).json(partida)
-    } catch (error) {
-        return responderConError(res, error)
-    }
-}
-
-/*
  * Objetivo: Validar una victoria enviada por el jugador.
  * Entrada: Codigo de partida y datos con nickname y longitud opcional.
  * Salida: Codigo HTTP 200 con victoria, ganador y partida actual.
@@ -50,6 +31,5 @@ function victoria(req, res) {
 }
 
 module.exports = {
-    iniciarPartidaJuego,
     victoria,
 }

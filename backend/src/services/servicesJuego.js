@@ -196,12 +196,12 @@ function validarVictoria(codigo, datos = {}) {
             ? partida.longitudObjetivo
             : LONGITUD_OBJETIVO
 
-        if (nickname && (Number(partida.longitudes?.[nickname]) || 0) >= objetivo) { // Verifica si el jugador alcanzó la longitud necesaria para ganar la partida
+        if (nickname && (Number(partida.longitudes?.[nickname]) || 0) >= objetivo) { 
             const finalizada = actualizarPartida(codigo, {
                 estado: 'finalizada',
                 ganador: nickname,
             })
-            cancelarTemporizadores(codigo) // Detiene todos los temporizadores asociados a la partida cuando hay un ganador
+            cancelarTemporizadores(codigo)
             return {
                 victoria: true,
                 ganador: nickname,
@@ -239,7 +239,7 @@ function validarVictoria(codigo, datos = {}) {
  * Restricciones: Cancela la cuenta regresiva y el cronometro del juego.
  */
 function cancelarTemporizadores(codigo) {
-    [`${codigo}:cuenta`, `${codigo}:juego`].forEach((clave) => { // Recorre todos los temporizadores asociados a la partida para cancelarlos
+    [`${codigo}:cuenta`, `${codigo}:juego`].forEach((clave) => {
         const temporizador = temporizadoresJuego.get(clave)
         if (temporizador) {
             clearInterval(temporizador)
@@ -249,26 +249,52 @@ function cancelarTemporizadores(codigo) {
 }
 
 /*
- * Objetivo: Iniciar una partida como anfitrion.
- * Entrada: Codigo y nickname del anfitrion.
- * Salida: Partida actualizada despues de la cuenta regresiva.
- * Restricciones: Solo el anfitrion puede iniciar y la partida debe estar esperando y tener jugadores suficientes.
+ * Objetivo: Pasar la partida al tablero cuando un jugador presiona "Entrar"
+ * Entrada: Código de la partida y nickname del jugador que presionó el botón
+ * Salida: Partida actualizada en estado 'en_tablero'
+ * Restricciones:
+ *      - Solo un jugador de la partida puede entrar
+ *      - La partida debe estar llena
+ *      - Si otro jugador ya presionó "Entrar", no cambia nada
  */
-async function iniciarPartida(codigo, anfitrion) {
+function entrarAlTablero(codigo, nickname) {
     const partida = obtenerPartidaActiva(codigo)
 
-    if (!partida.anfitrion || partida.anfitrion.toLowerCase() !== String(anfitrion).trim().toLowerCase()) { // Verifica que quien intenta iniciar la partida sea el anfitrión que la creó
-        throw new ErrorJuego('Solo el anfitrión puede iniciar la partida.', 403)
+    if (!partida.buscarJugador(nickname)) {
+        throw new ErrorJuego('No eres jugador de esta partida.', 403)
     }
     if (partida.estado !== 'esperando') {
-        throw new ErrorJuego('La partida ya comenzó o fue finalizada.', 409)
+        return partida // Otro jugador ya presionó "Entrar"
     }
     if (!partida.estaLlena()) {
-        throw new ErrorJuego('No hay suficientes jugadores para iniciar la partida.', 400)
+        throw new ErrorJuego('No hay suficientes jugadores para entrar al tablero.', 400)
+    }
+    return actualizarPartida(codigo, { estado: 'en_tablero' })
+}
+/*
+ * Objetivo: Arrancar el juego cuando un jugador presiona la tecla "u"
+ * Entrada: Código de la partida y nickname del jugador que presionó la tecla
+ * Salida: Partida actualizada después de la cuenta regresiva
+ * Restricciones:
+ *      - Cualquier jugador de la partida puede presionar "u"
+ *      - Solo funciona cuando todos ya están en el tablero
+ *      - Si la cuenta ya empezó o el juego está en curso, se ignora
+ */
+async function iniciarPartida(codigo, nickname) { 
+    const partida = obtenerPartidaActiva(codigo)
+
+    if (!partida.buscarJugador(nickname)) { 
+        throw new ErrorJuego('No eres jugador de esta partida.', 403)
+    }
+    if (partida.estado === 'cuenta_regresiva' || partida.estado === 'jugando') {
+        return partida // Otro jugador ya presionó "u"
+    }
+    if (partida.estado !== 'en_tablero') {
+        throw new ErrorJuego('Primero hay que entrar al tablero.', 409)
     }
     cancelarExpiracion(partida.codigo) // Cancela la expiración de la partida al iniciar el juego
 
-    const iniciando = await iniciarCuentaRegresiva(codigo) // Espera a que finalice la cuenta regresiva antes de comenzar oficialmente el juego
+    const iniciando = await iniciarCuentaRegresiva(codigo) // Aquí arranca el motor del juego
     if (iniciando.tipoJuego === 'tiempo') {
         iniciarTemporizador(codigo)
     }
@@ -277,6 +303,7 @@ async function iniciarPartida(codigo, anfitrion) {
 
 module.exports = {
     ErrorJuego,
+    entrarAlTablero,
     iniciarPartida,
     validarVictoria,
 }
