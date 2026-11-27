@@ -179,4 +179,7 @@ tmp/
 *.sqlite
 
 # Archivos de despliegue
-.vercel
+.
+
+# Permitir el ejemplo de variables de entorno
+!.env.example
