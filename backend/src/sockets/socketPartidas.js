@@ -10,7 +10,6 @@ const {
 } = require('../services/servicesPartidas')
 const { existeJugador } = require('../utils/jugadoresConectados')
 const { buscarPartida, suscribirCambios } = require('../utils/partidasActivas')
-const { iniciarPartida } = require('../../../frontend/src/services/partidas') 
 
 const SALA_LISTA = 'lista-partidas' // Sala de quienes están viendo la lista de partidas para unirse
 
