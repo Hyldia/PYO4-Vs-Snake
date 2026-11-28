@@ -48,6 +48,91 @@ function mismaCelda(a, b) {
 }
 
 /*
+ * Objetivo: Escoger una celda aleatoria del tablero que no esté ocupada por serpientes, alimentos ni venenos.
+ * Entrada:
+        - Estado actual de la partida
+        - Función aleatrorio para generar los numeros aleatorios entre 0 y 1
+ * Salida: Objeto con las coordenadas de una celda libre
+ * Restricciones:
+        - Debe existir al menos una celda disponible
+        - El generador aleatorio debe devolver un valor entre 0 y 1
+ */
+function obtenerCeldaLibre(estado, aleatorio = Math.random){
+    const ocupadas = new Set() // Lista de las celdas ocupadas
+    // Agrega la posicion de los segmentos de las serpientes
+    estado.serpientes.forEach((serpiente) => {
+        serpiente.segmentos.forEach((segmento) => ocupadas.add(clave(segmento)))
+    })
+    estado.comida.forEach((alimento) => ocupadas.add(clave(alimento))) // Agrega las posicionesd de los aliemntos 
+    estado.venenos.forEach((veneno) => ocupadas.add(clave(veneno))) // Agrega las posiciones de los venenos
+
+    const libres = []
+    // Recorre todo el tablero
+    for (let y = 0; y < estado.tablero.alto; y += 1){
+        for(let x = 0; x < estado.tablero.ancho; x += 1){
+            const celda = {x,y} // Revisa si la celda esta libre
+            if (!ocupadas.has(clave(celda))) {
+                libres.push(celda)
+            }
+        }
+    }
+    if (libres.length === 0){ // Verificar si hay espacio
+        throw new Error('No hay celdas libres para colocar el elemento.')
+    }
+    // Obtener un numero aleatorio para elegir una celda libre al azar
+    const valorAleatotio = aleatorio() 
+    if (!Number.isFinite(valorAleatotio) || valorAleatotio < 0 || valorAleatotio >= 1 ){
+        throw new Error('El generador aleatorio debe devolver un numero entre 0 y 1')
+    }
+    return libres[Math.floor(valorAleatotio * libres.length)]
+}
+
+/*
+ * Objetivo: Agregar un alimento en una posición libre del tablero.
+ * Entrada:
+        - Estado actual de la partida
+        - Aleatorio para generar posiciones aleatorias
+ * Salida: Nuevo estado con el alimento agregado.
+ * Restricciones: El alimento no se puede generar sobre serpientes, alimentos o venenos existentes
+ */
+function agregarAlimento(estado, aleatorio = Math.random) {
+    const celda = obtenerCeldaLibre(estado, aleatorio)
+    return {
+        ...estado, // Mantiene las propiedades ya existentes del juego
+        comida: [...estado.comida, celda], // Toma la comiuda que ya exite y le agrega una nueva
+    }
+}
+
+/*
+ * Agrega un nuevo veneno al estado actual del juego en una posición libre del tablero
+ */
+function agregarVeneno(estado, aleatorio = Math.random) {
+    const celda = obtenerCeldaLibre(estado, aleatorio)
+    return {
+        ...estado, // Mantiene las propiedades ya existentes del juego
+        venenos: [...estado.venenos, celda], // Toma el veneno que ya exite y le agrega una nueva
+    }
+}
+
+/*
+ * Objetivo: Reubicar todos los venenos existentes en nuevas posiciones aleatorias
+ * Entrada:
+        - Estado actual de la partida
+        - Aleatorio para las posiciones
+ * Salida:nNuevo estado con los venenos ubicados en nuevas posiciones
+ * Restricciones:
+        - Mantiener la misma cantidad de venenos
+        - Los nuevos venenos no pueden colocarse sobre serpientes, alimentos u otros venenos
+ */
+function reubicarVenenos(estado, aleatorio =Math.random){
+    let resultado = {...estado, venenos: [],} // Mantine los estados actules pero elimina temporalmente los venenos
+    for(let i = 0; i < estado.venenos.length; i += 1){
+        resultado = agregarVeneno(resultado, aleatorio)
+    }
+    return resultado
+}
+
+/*
  * Detecta choques con bordes, cuerpos u otras cabezas.
  */
 function detectarChoque(movimiento, movimientos, ocupadas, tablero) {
@@ -136,7 +221,11 @@ function tick(estado, { celdasPerdidasPorChoque }) {
 }
 
 module.exports = {
+    agregarAlimento,
+    agregarVeneno,
     calcularDimension,
     crearEstado,
+    obtenerCeldaLibre,
+    reubicarVenenos,
     tick,
 }

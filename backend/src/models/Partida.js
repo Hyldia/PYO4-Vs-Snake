@@ -16,6 +16,7 @@ class Partida {
         this.longitudObjetivo = datos.longitudObjetivo
         this.tematica = datos.tematica
         this.estado = 'esperando'
+        this.estadoJuego = null
     }
 
     /*
